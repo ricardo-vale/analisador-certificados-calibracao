@@ -207,6 +207,6 @@ analisador-certificados-calibracao/
 
 **Ricardo Vale de Farias** – Técnico em Metrologia com mais de 20 anos em calibração e qualidade laboratorial (ABNT NBR ISO/IEC 17025), especialidade Pressão. Atuou como Signatário Autorizado, elaborando procedimentos e emitindo e analisando criticamente certificados. Concluindo Engenharia de Software.
 
-<!-- LINK: LinkedIn -->
+[LinkedIn: linkedin.com/in/ricardovale-metrologia](https://www.linkedin.com/in/ricardovale-metrologia)
 
 Projeto desenvolvido com apoio do Claude (IA) para a programação. O domínio técnico, os critérios e a validação dos resultados são do autor.
