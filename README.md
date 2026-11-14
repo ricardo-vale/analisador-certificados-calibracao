@@ -6,7 +6,7 @@ Ferramenta que faz a **análise crítica do certificado de um padrão de pressã
 > **Status:** protótipo validado com 4 certificados fictícios em 13/11/2026. Ainda não é usado em produção.
 > Todos os certificados deste repositório são fictícios (marcados "FICTÍCIO – USO DIDÁTICO").
 
-<!-- PRINT 1: tela de parecer APROVADO → docs/img/cert-001-rodada2-aprovado.png -->
+![Parecer APROVADO do CERT-001, com o cálculo ponto a ponto](docs/img/cert-001-rodada2-aprovado.png)
 <!-- VÍDEO: link do vídeo de demonstração (fluxo completo com IA) -->
 
 ---
@@ -122,11 +122,21 @@ Teste com os 4 certificados fictícios e gabarito, em 13/11/2026.
 | CERT-003 | PENDENTE | PENDENTE | – (não afetado) |
 | CERT-004 | REPROVADO | REPROVADO | – (não afetado) |
 
-<!-- PRINT 2: CERT-001 rodada 1, PENDENTE por falso positivo em h) → docs/img/cert-001-rodada1-pendente.png -->
-<!-- PRINT 3: CERT-001 rodada 2, APROVADO → docs/img/cert-001-rodada2-aprovado.png -->
-<!-- PRINT 4: CERT-002 rodada 2, REPROVADO (U fora em 20 MPa) → docs/img/cert-002-rodada2-reprovado.png -->
-<!-- PRINT 5: CERT-003, checklist com k) e l) ausentes e observações da IA → docs/img/cert-003-checklist.png -->
-<!-- PRINT 6: CERT-004, REPROVADO com erro fora e 3 itens ausentes → docs/img/cert-004-reprovado.png -->
+**CERT-001, rodada 1:** PENDENTE por falso positivo no item h). Na rodada 2, após a correção, saiu APROVADO (tela no início deste README).
+
+![CERT-001 na rodada 1: PENDENTE por falso positivo no item h)](docs/img/cert-001-rodada1-pendente.png)
+
+**CERT-002, rodada 2:** REPROVADO; U = 0,025 MPa no ponto de 20 MPa, acima do limite de 0,02 MPa.
+
+![CERT-002 na rodada 2: REPROVADO por U fora do critério em 20 MPa](docs/img/cert-002-rodada2-reprovado.png)
+
+**CERT-003:** checklist com k) e l) ausentes e as observações da IA.
+
+![CERT-003: checklist com os itens k) e l) ausentes e observações da IA](docs/img/cert-003-checklist.png)
+
+**CERT-004:** REPROVADO; |E| = 1,1 kPa no ponto de 1500 kPa, acima do limite de 1 kPa, e itens f), m) e o) ausentes.
+
+![CERT-004: REPROVADO por erro fora do critério e três itens documentais ausentes](docs/img/cert-004-reprovado.png)
 
 | Métrica | Valor | Origem |
 |---|---|---|
