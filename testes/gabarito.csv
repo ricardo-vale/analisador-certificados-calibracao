@@ -1,0 +1,5 @@
+﻿certificado;arquivo;tipo;unidade;erro_max;lim_erro;U_max;lim_U;resultado_metrologico;pendencias_documentais;parecer
+DLT-P-2026/0101;CERT-001_ref_0-10MPa.pdf;ref;MPa;0.004;0.005;0.0015;0.002;APROVADO;nenhuma;APROVADO
+DLT-P-2026/0102;CERT-002_trab_0-20MPa.pdf;trab;MPa;0.04;0.05;0.025;0.02;REPROVADO;nenhuma;REPROVADO
+DLT-P-2026/0103;CERT-003_analog_0-1600kPa.pdf;analog;kPa;6;8.0;2.5;5.0;APROVADO;"k) sem condições ambientais; l) sem fator k e nível de confiança";PENDENTE – solicitar correção
+DLT-P-2026/0104;CERT-004_ref_0-2000kPa.pdf;ref;kPa;1.1;1.0;0.3;0.4;REPROVADO;"f) padrão não identificado; m) rastreabilidade sem evidência; o) sem numeração de página";REPROVADO

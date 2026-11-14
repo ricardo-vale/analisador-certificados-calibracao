@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analisador Crítico de Certificados</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<style>
+:root{
+  /* Layout: coluna de entrada à esquerda, laudo à direita; resumo antes do detalhe. */
+  --bg:#f3f5f7; --panel:#ffffff; --ink:#18232e; --muted:#5b6b7a; --line:#d5dde5;
+  --accent:#1d5a8c; --accent-soft:#e3edf6;
+  --ok:#1f7a4d; --ok-soft:#e2f3ea; --warn:#9a6200; --warn-soft:#fbf0d9; --bad:#b3261e; --bad-soft:#fbe4e2;
+  --display:"IBM Plex Sans",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#11171d; --panel:#18212a; --ink:#e4ebf1; --muted:#9aabba; --line:#2c3a47;
+  --accent:#6fa8dc; --accent-soft:#1c2f42;
+  --ok:#5cc28f; --ok-soft:#163327; --warn:#e3b04f; --warn-soft:#352a12; --bad:#f08a80; --bad-soft:#3b1d1b; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#11171d; --panel:#18212a; --ink:#e4ebf1; --muted:#9aabba; --line:#2c3a47;
+  --accent:#6fa8dc; --accent-soft:#1c2f42;
+  --ok:#5cc28f; --ok-soft:#163327; --warn:#e3b04f; --warn-soft:#352a12; --bad:#f08a80; --bad-soft:#3b1d1b; color-scheme:dark;}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body)}
+header{padding:20px 24px 12px;border-bottom:1px solid var(--line);background:var(--panel)}
+h1{font:600 22px/1.2 var(--display);margin:0;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted);max-width:75ch}
+main{display:grid;grid-template-columns:minmax(280px,360px) 1fr;gap:20px;padding:20px 24px;max-width:1280px;margin:0 auto}
+@media (max-width:860px){main{grid-template-columns:1fr;padding:16px}}
+section.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px}
+h2{font:600 13px/1.2 var(--display);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0}
+.stack{display:flex;flex-direction:column;gap:16px}
+label{font-weight:500;font-size:13px}
+input[type=file],textarea,select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px}
+textarea{min-height:110px;font:12px/1.4 var(--mono);resize:vertical}
+button{font:600 14px var(--body);border-radius:6px;padding:9px 14px;cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:#fff}
+button.sec{background:transparent;color:var(--accent)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.note{font-size:12.5px;color:var(--muted)}
+.status{font-size:13px;padding:8px 10px;border-radius:6px;background:var(--accent-soft)}
+.status.err{background:var(--bad-soft);color:var(--bad)}
+.verdict{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 16px;border-radius:8px;border-left:6px solid var(--muted);background:var(--bg)}
+.verdict.ok{border-color:var(--ok);background:var(--ok-soft)} .verdict.bad{border-color:var(--bad);background:var(--bad-soft)} .verdict.warn{border-color:var(--warn);background:var(--warn-soft)}
+.verdict strong{font:700 22px var(--display)}
+.verdict .meta{color:var(--muted);font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{border:1px solid var(--line);border-radius:6px;padding:10px}
+.tile .k{font-size:12px;color:var(--muted)} .tile .v{font:600 17px var(--mono);font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+th{font-weight:600;color:var(--muted);font-size:12px}
+td:first-child,th:first-child{text-align:left}
+td.txt{text-align:left;white-space:normal}
+.pill{display:inline-block;font:600 11.5px var(--body);padding:2px 8px;border-radius:99px}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.na{background:var(--bg);color:var(--muted)}
+.mono{font-family:var(--mono)}
+ul.list{margin:0;padding-left:18px}
+footer{max-width:1280px;margin:0 auto;padding:4px 24px 28px;color:var(--muted);font-size:12.5px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Analisador Crítico de Certificados</h1>
+  <p>Análise crítica de certificados de calibração de padrões de pressão: checklist documental (ABNT NBR ISO/IEC 17025:2017, itens 7.8.2.1 e 7.8.4.1) e critérios de aceitação metrológicos. A IA extrai os dados; os cálculos são feitos pela página, de forma determinística e visível.</p>
+</header>
+<main>
+  <div class="stack">
+    <section class="card" aria-labelledby="h-ia">
+      <h2 id="h-ia">1. Analisar um certificado com IA</h2>
+      <label for="pdf">Certificado em PDF (com texto selecionável)</label>
+      <input type="file" id="pdf" accept="application/pdf">
+      <label for="txt">ou cole o texto do certificado</label>
+      <textarea id="txt" placeholder="Texto do certificado..."></textarea>
+      <button id="btn-ia" type="button">Analisar com IA</button>
+      <div id="ia-status" class="note">Verificando acesso à IA...</div>
+    </section>
+    <section class="card" aria-labelledby="h-ex">
+      <h2 id="h-ex">2. Ou abrir um exemplo</h2>
+      <p class="note">Quatro certificados fictícios de teste, com erros plantados. Os dados já estão extraídos, então funcionam sem IA.</p>
+      <div class="row" id="exemplos"></div>
+    </section>
+    <section class="card" aria-labelledby="h-tipo">
+      <h2 id="h-tipo">Classificação do padrão</h2>
+      <label for="tipo">Tipo: preenchido automaticamente pela análise. Altere só se estiver errado.</label>
+      <select id="tipo">
+        <option value="ref">Digital – padrão de referência</option>
+        <option value="trab">Digital – padrão de trabalho</option>
+        <option value="analog">Analógico – padrão</option>
+      </select>
+      <p class="note">Critérios (% do fundo de escala; basta um ponto fora para reprovar): referência U ≤ 0,02 % e |E| ≤ 0,05 %; trabalho U ≤ 0,1 % e |E| ≤ 0,25 %; analógico U ≤ ½ divisão e erro fiducial ≤ classe.</p>
+    </section>
+  </div>
+
+  <section class="card" aria-labelledby="h-laudo" id="laudo">
+    <h2 id="h-laudo">Parecer</h2>
+    <div id="out"></div>
+  </section>
+</main>
+<footer>Projeto de portfólio de Ricardo Vale. Todos os certificados de exemplo são fictícios. Regras de aceitação baseadas em prática de laboratório acreditado; conferir com o procedimento do seu laboratório antes de uso real.</footer>
+
+<script>
+if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }
+const ITENS = {
+ a:"Título", b:"Nome e endereço do laboratório; local da calibração", c:"Nº do certificado, identificação em cada página e indicação de fim",
+ d:"Nome e endereço do cliente", e:"Procedimento/norma, com revisão", f:"Identificação dos padrões utilizados",
+ g:"Descrição e identificação do item", h:"Características metrológicas (classe, resolução, faixa)", i:"Data da calibração",
+ j:"Resultados em unidade do SI", k:"Condições ambientais", l:"Incerteza expandida, fator k e nível de confiança",
+ m:"Evidência de rastreabilidade", n:"Responsável técnico / signatário autorizado", o:"Número da página e total de páginas"};
+
+function full(missing, ev){ const c={}; for(const k in ITENS) c[k]={presente:!missing.includes(k), evidencia: missing.includes(k)?"não encontrado":(ev[k]||"presente")}; return c; }
+const EX = [
+ {nome:"CERT-001 · referência 0–10 MPa", cert:"DLT-P-2026/0101", tipo:"ref", faixa_min:0, faixa_max:10, unidade:"MPa",
+  pontos:[[2,2.002,2.003,0.0015,2],[4,4.001,4.003,0.0015,2],[6,6.003,6.004,0.0015,2],[8,8.002,8.004,0.0015,2],[10,10.003,10.004,0.0015,2]], checklist:full([],{})},
+ {nome:"CERT-002 · trabalho 0–20 MPa", cert:"DLT-P-2026/0102", tipo:"trab", faixa_min:0, faixa_max:20, unidade:"MPa",
+  pontos:[[4,4.01,4.02,0.012,2],[8,8.02,8.03,0.012,2],[12,12.02,12.04,0.015,2],[16,16.03,16.04,0.018,2],[20,20.03,20.04,0.025,2]], checklist:full([],{})},
+ {nome:"CERT-003 · analógico 0–1600 kPa", cert:"DLT-P-2026/0103", tipo:"analog", faixa_min:0, faixa_max:1600, unidade:"kPa", divisao:10, classe:0.5,
+  pontos:[[400,402,404,2.5,null],[800,801,805,2.5,null],[1200,1203,1206,2.5,null],[1600,1602,1604,2.5,null]],
+  checklist:(()=>{const c=full(["k"],{}); c.l={presente:false,evidencia:"U declarada, mas sem fator k e sem nível de confiança"}; return c;})()},
+ {nome:"CERT-004 · referência 0–2000 kPa", cert:"DLT-P-2026/0104", tipo:"ref", faixa_min:0, faixa_max:2000, unidade:"kPa",
+  pontos:[[500,500.3,500.5,0.3,2],[1000,1000.4,1000.6,0.3,2],[1500,1500.6,1501.1,0.3,2],[2000,2000.5,2000.8,0.3,2]],
+  checklist:(()=>{const c=full(["f","o"],{}); c.m={presente:false,evidencia:"apenas \"Padrões rastreáveis.\", sem identificação nem certificado"}; return c;})()}
+].map(e=>({...e, pontos:e.pontos.map(p=>({nominal:p[0],cres:p[1],dec:p[2],U:p[3],k:p[4]}))}));
+
+let atual = null, tempoMs = null, origem = "";
+const $ = id => document.getElementById(id);
+const fmt = (x,d=4) => x==null||isNaN(x) ? "–" : (+x.toFixed(d)).toLocaleString("pt-BR",{maximumFractionDigits:d});
+const r6 = x => Math.round(x*1e6)/1e6;
+
+function avaliar(d, tipo){
+  const fe = d.faixa_max - (d.faixa_min||0);
+  let limE, limU, regra;
+  if(tipo==="ref"){limE=0.0005*fe; limU=0.0002*fe; regra="Referência: |E| ≤ 0,05 % FE; U ≤ 0,02 % FE";}
+  else if(tipo==="trab"){limE=0.0025*fe; limU=0.001*fe; regra="Trabalho: |E| ≤ 0,25 % FE; U ≤ 0,1 % FE";}
+  else {
+    const cls = d.classe, div = d.divisao;
+    limE = cls!=null ? cls/100*fe : NaN; limU = div!=null ? div/2 : NaN;
+    regra = `Analógico: erro fiducial ≤ classe (${cls??"?"} %); U ≤ ½ divisão (${div??"?"} ${d.unidade})`;
+  }
+  const linhas = (d.pontos||[]).filter(p=>p.nominal!==0 || p.U!=null).map(p=>{
+    const E = Math.max(Math.abs(p.nominal-p.cres), Math.abs(p.nominal-p.dec));
+    const okE = r6(E) <= r6(limE), okU = p.U==null ? null : r6(p.U) <= r6(limU);
+    const guarda = p.U==null ? null : r6(E+p.U) <= r6(limE);
+    return {...p, E, okE, okU, guarda};
+  });
+  const Emax = Math.max(...linhas.map(l=>l.E)), Umax = Math.max(...linhas.filter(l=>l.U!=null).map(l=>l.U));
+  const metOk = linhas.length>0 && linhas.every(l=>l.okE && l.okU!==false) && !isNaN(limE) && !isNaN(limU);
+  const faltas = Object.entries(d.checklist||{}).filter(([k,v])=>!v.presente).map(([k])=>k);
+  const parecer = !metOk ? "REPROVADO" : (faltas.length ? "PENDENTE" : "APROVADO");
+  return {fe, limE, limU, regra, linhas, Emax, Umax, metOk, faltas, parecer, fiducial: Emax/fe*100};
+}
+
+function render(){
+  const out = $("out");
+  if(!atual){ out.innerHTML = '<p class="note">Escolha um exemplo ou envie um certificado.</p>'; return; }
+  const tipo = $("tipo").value, a = avaliar(atual, tipo), u = atual.unidade||"";
+  const cls = a.parecer==="APROVADO"?"ok":a.parecer==="REPROVADO"?"bad":"warn";
+  const motivo = a.parecer==="APROVADO" ? "Atende ao checklist e aos critérios de aceitação."
+    : a.parecer==="PENDENTE" ? "Critérios metrológicos atendidos, mas faltam itens obrigatórios: solicitar correção ao laboratório."
+    : "Fora do critério de aceitação: identificar como \"fora de uso\"" + (a.faltas.length?"; há também pendências documentais.":".");
+  const nPts = a.linhas.filter(l=>!l.okE || l.okU===false).length;
+  out.innerHTML = `
+  <div class="verdict ${cls}"><strong>${a.parecer}</strong>
+    <div><div>${motivo}</div><div class="meta">${atual.cert||"certificado"} · ${origem}${tempoMs!=null?` · análise em ${fmt(tempoMs/1000,1)} s`:""}</div></div></div>
+  <div class="tiles">
+    <div class="tile"><div class="k">Maior |erro|</div><div class="v">${fmt(a.Emax)} ${u}</div><div class="k">limite ${fmt(a.limE)} ${u}</div></div>
+    <div class="tile"><div class="k">Maior U</div><div class="v">${fmt(a.Umax)} ${u}</div><div class="k">limite ${fmt(a.limU)} ${u}</div></div>
+    <div class="tile"><div class="k">Pontos fora do critério</div><div class="v">${nPts} de ${a.linhas.length}</div><div class="k">basta 1 para reprovar</div></div>
+    <div class="tile"><div class="k">Itens a)–o) ausentes</div><div class="v">${a.faltas.length} de 15</div><div class="k">${a.faltas.map(f=>f+")").join(" ")||"nenhum"}</div></div>
+  </div>
+  <div><h2>Critério aplicado</h2><p class="note" style="margin:6px 0 0">${a.regra}. Faixa: ${fmt(atual.faixa_min||0)} a ${fmt(atual.faixa_max)} ${u} (FE = ${fmt(a.fe)} ${u}). Erro E = indicação do instrumento − indicação do padrão, pior caso entre crescente e decrescente.${tipo==="analog"?` Erro fiducial = ${fmt(a.Emax)} ÷ ${fmt(a.fe)} × 100 = ${fmt(a.fiducial,3)} %.`:""}</p></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Ponto (${u})</th><th>Padrão cresc.</th><th>Padrão decresc.</th><th>|E|</th><th>U</th><th>k</th><th>Erro</th><th>Incerteza</th><th>Banda de guarda |E|+U</th></tr></thead>
+    <tbody>${a.linhas.map(l=>`<tr><td class="mono">${fmt(l.nominal)}</td><td>${fmt(l.cres)}</td><td>${fmt(l.dec)}</td><td>${fmt(l.E)}</td><td>${fmt(l.U)}</td><td>${l.k==null?"–":fmt(l.k,2)}</td>
+      <td>${pill(l.okE)}</td><td>${pill(l.okU)}</td><td>${pill(l.guarda,"info")}</td></tr>`).join("")}</tbody></table></div>
+  <p class="note">A coluna "banda de guarda" é informativa: mostra se o ponto passaria pela regra mais conservadora (|E| + U ≤ limite de erro). O parecer usa erro e U avaliados separadamente.</p>
+  <div><h2>Checklist documental a)–o)</h2></div>
+  <div class="tablewrap"><table><thead><tr><th>Item</th><th class="txt" style="text-align:left">Requisito</th><th>Situação</th><th style="text-align:left">Evidência</th></tr></thead>
+  <tbody>${Object.keys(ITENS).map(k=>{const v=(atual.checklist||{})[k]||{presente:false,evidencia:"não avaliado"};
+    return `<tr><td class="mono">${k})</td><td class="txt">${ITENS[k]}</td><td>${pill(v.presente)}</td><td class="txt">${esc(v.evidencia||"")}</td></tr>`}).join("")}</tbody></table></div>
+  ${atual.observacoes&&atual.observacoes.length?`<div><h2>Observações da IA</h2><ul class="list note">${atual.observacoes.map(o=>`<li>${esc(o)}</li>`).join("")}</ul></div>`:""}
+  <p class="note">Itens condicionais, verificados só se houver declaração de conformidade: data de emissão e regra de decisão (17025:2017, 7.8.6).</p>`;
+}
+function pill(v,mode){ if(v==null) return '<span class="pill na">n/a</span>';
+  if(mode==="info") return v?'<span class="pill ok">passaria</span>':'<span class="pill warn">não passaria</span>';
+  return v?'<span class="pill ok">atende</span>':'<span class="pill bad">não atende</span>'; }
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+
+EX.forEach((e,i)=>{ const b=document.createElement("button"); b.type="button"; b.className="sec"; b.textContent=e.nome; b.id="ex"+i;
+  b.addEventListener("click",()=>{ atual=structuredClone(e); $("tipo").value=e.tipo; tempoMs=null; origem="exemplo pré-extraído"; render(); }); $("exemplos").appendChild(b); });
+$("tipo").addEventListener("change", render);
+
+async function textoDoPdf(file){
+  const pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
+  let t = "";
+  for(let i=1;i<=pdf.numPages;i++){ const pg = await pdf.getPage(i); const c = await pg.getTextContent();
+    let linha = "", y = null;
+    for(const it of c.items){ const yy = Math.round(it.transform[5]); if(y!==null && Math.abs(yy-y)>2){ t += linha.trim()+"\n"; linha=""; } y=yy; linha += it.str+" "; }
+    t += linha.trim()+`\n--- fim da página ${i} de ${pdf.numPages} (marcador do extrator, não faz parte do certificado) ---\n`; }
+  return t;
+}
+$("pdf").addEventListener("change", async ev=>{ const f=ev.target.files[0]; if(!f) return;
+  try{ $("txt").value = await textoDoPdf(f); setStatus(`Texto extraído de ${f.name}. Clique em "Analisar com IA".`); }
+  catch(e){ setStatus("Não consegui ler o texto deste PDF. Se for digitalizado (imagem), cole o texto manualmente.", true); }});
+
+function setStatus(m, err){ const s=$("ia-status"); s.className = "status"+(err?" err":""); s.textContent=m; }
+
+const PROMPT = txt => `Você é um assistente de metrologia que apoia a análise crítica de certificados de calibração de padrões de pressão (ABNT NBR ISO/IEC 17025:2017).
+Leia o TEXTO do certificado abaixo e devolva SOMENTE um objeto JSON, sem comentários, neste formato:
+{"cert": string, "tipo": "ref"|"trab"|"analog"|"indefinido", "faixa_min": number, "faixa_max": number, "unidade": string, "divisao": number|null, "classe": number|null,
+ "pontos": [{"nominal": number, "cres": number, "dec": number, "U": number|null, "k": number|null}],
+ "checklist": {"a":{"presente":bool,"evidencia":string}, ... até "o"},
+ "observacoes": [string]}
+Regras:
+- Não invente. Se um item não estiver no texto, "presente": false e evidencia "não encontrado". Em "evidencia", cite em poucas palavras o trecho que comprova.
+- Itens: a) título; b) nome e endereço do laboratório e local da calibração; c) número do certificado, identificação em cada página e indicação de fim; d) nome e endereço do cliente; e) procedimento/norma com revisão; f) identificação dos padrões usados; g) descrição e identificação do item (fabricante, modelo, série/tag); h) características metrológicas do item: presente se o certificado informar a faixa E a resolução (ou o valor de uma divisão); a classe de exatidão só é exigida para manômetro analógico, então sua ausência em instrumento digital NÃO torna o item ausente; i) data da calibração; j) resultados em unidade do SI; k) condições ambientais; l) incerteza expandida COM fator k E nível de confiança (falta qualquer um dos três = false); m) evidência de rastreabilidade (frase genérica sem identificar padrão/certificado = false); n) responsável técnico ou signatário autorizado; o) número da página e total de páginas impressos no documento (os marcadores "fim da página" do extrator NÃO contam).
+- "tipo": "ref" se o texto diz padrão de referência, "trab" se padrão de trabalho, "analog" se manômetro analógico; senão "indefinido".
+- Números: use ponto como separador decimal. "nominal" é a indicação do instrumento; "cres" e "dec" são as indicações do padrão. Ignore o ponto zero se não tiver U.
+- Em "observacoes", até 3 pontos de atenção que um signatário autorizado notaria (ex.: validade do padrão, unidade fora do SI). Não calcule aprovação: os cálculos são feitos pela página.
+
+TEXTO:
+"""${txt.slice(0,15000)}"""`;
+
+let sample = null;
+(async ()=>{
+  try{ sample = await claude.use("sample"); }catch(e){ sample = null; }
+  if(sample){ setStatus("IA disponível. Envie um PDF ou cole o texto."); }
+  else { setStatus("A análise com IA não está disponível neste acesso. Use os exemplos ao lado, que mostram o resultado completo."); $("btn-ia").disabled = true; }
+})();
+
+$("btn-ia").addEventListener("click", async ()=>{
+  const txt = $("txt").value.trim();
+  if(!txt){ setStatus("Envie um PDF ou cole o texto do certificado primeiro.", true); return; }
+  if(!sample) return;
+  const b=$("btn-ia"); b.disabled=true; setStatus("Analisando com IA...");
+  const t0 = performance.now();
+  try{
+    const d = await sample.json(PROMPT(txt), {modelTier:"default"});
+    if(!d || !Array.isArray(d.pontos) || !d.checklist) throw {message:"resposta incompleta"};
+    tempoMs = performance.now()-t0; atual = d; origem = "extraído pela IA";
+    if(["ref","trab","analog"].includes(d.tipo)) $("tipo").value = d.tipo;
+    setStatus(d.tipo==="indefinido" ? "Concluído. O tipo de padrão não estava claro no texto: confirme a classificação ao lado." : "Concluído. Confira a classificação do padrão ao lado.");
+    render(); $("laudo").scrollIntoView({behavior:"smooth"});
+  }catch(e){
+    setStatus(e && e.code==="rate_limited" ? "Limite de uso atingido. Tente de novo em alguns minutos." :
+              e && e.code==="not_granted" ? "Acesso à IA não autorizado. Use os exemplos." :
+              "A IA não devolveu dados utilizáveis ("+(e&&e.message||"erro")+"). Tente de novo ou cole o texto revisado.", true);
+  }finally{ b.disabled = !sample; }
+});
+
+atual = structuredClone(EX[3]); $("tipo").value = EX[3].tipo; origem = "exemplo pré-extraído"; render();
+</script>
+</body>
+</html>
