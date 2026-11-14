@@ -142,7 +142,7 @@ Teste com os 4 certificados fictícios e gabarito, em 13/11/2026.
 |---|---|---|
 | Erros plantados detectados | 7 de 7 | Medido (teste com gabarito, 13/11/2026) |
 | Pareceres corretos | 4 de 4 (após 1 correção) | Medido (teste com gabarito, 13/11/2026) |
-| Tempo da IA | 6 a 7 s por certificado | Medido (13/11/2026) |
+| Tempo da IA | ~7 s por certificado (6,0 a 7,3 s medidos) | Medido (13/11/2026) |
 | Conferência humana do parecer | ~1 min por certificado | Medido (13/11/2026) |
 | Análise manual de referência | ~60 min por certificado | **Estimativa de especialista** (não medido) |
 
@@ -165,7 +165,7 @@ Construído em 1 dia com o Claude, sem escrever código à mão:
 ## Limitações
 
 - **Amostra pequena e fictícia:** 4 casos de teste provam o método, não o uso em produção.
-- **Tempos:** os ~60 min são estimativa de especialista; o ~1 min e os 6 a 7 s foram medidos.
+- **Tempos:** os ~60 min são estimativa de especialista; o ~1 min e os 6,0 a 7,3 s foram medidos.
 - **PDF com texto:** certificado digitalizado (imagem) ainda não é lido.
 - **Acesso:** a análise com IA pelo link exige conta no Claude; os exemplos funcionam sem IA.
 - **Decisão humana:** a ferramenta prepara o parecer; quem decide e assina é o signatário autorizado.
