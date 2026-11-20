@@ -3,7 +3,7 @@
 Ferramenta que faz a **análise crítica do certificado de um padrão de pressão** assim que ele volta da calibração externa, antes de o padrão voltar ao uso.
 **A IA lê o certificado; a página faz as contas.** A decisão final é do signatário autorizado.
 
-> **Status:** protótipo validado com 4 certificados fictícios em 13/11/2026. Ainda não é usado em produção.
+> **Status:** protótipo validado com 4 certificados fictícios em 13/11/2026 e revalidado em 20/11/2026. Ainda não é usado em produção.
 > Todos os certificados deste repositório são fictícios (marcados "FICTÍCIO – USO DIDÁTICO").
 
 ![Parecer APROVADO do CERT-001, com o cálculo ponto a ponto](docs/img/cert-001-rodada2-aprovado.png)
@@ -113,14 +113,16 @@ O gabarito completo está em `testes/gabarito.csv`.
 
 ## Resultados
 
-Teste com os 4 certificados fictícios e gabarito, em 13/11/2026.
+Teste com os 4 certificados fictícios e gabarito. Rodada 1 em 13/11/2026; rodada 2 em 13/11 (CERT-001 e 002) e 20/11/2026 (CERT-003 e 004); rodada 3 em 20/11/2026.
 
-| Certificado | Esperado | Rodada 1 | Rodada 2 (após correção) |
-|---|---|---|---|
-| CERT-001 | APROVADO | PENDENTE (falso positivo em h) | **APROVADO** |
-| CERT-002 | REPROVADO | REPROVADO (+ falso positivo em h) | **REPROVADO** |
-| CERT-003 | PENDENTE | PENDENTE | – (não afetado) |
-| CERT-004 | REPROVADO | REPROVADO | – (não afetado) |
+| Certificado | Esperado | Rodada 1 | Rodada 2 (após correção do item h) | Rodada 3 (após correção do item c) |
+|---|---|---|---|---|
+| CERT-001 | APROVADO | PENDENTE (falso positivo em h) | APROVADO | **APROVADO** |
+| CERT-002 | REPROVADO | REPROVADO (+ falso positivo em h) | REPROVADO | **REPROVADO** |
+| CERT-003 | PENDENTE | PENDENTE | PENDENTE | **PENDENTE** |
+| CERT-004 | REPROVADO | REPROVADO | REPROVADO (+ falso positivo em c) | **REPROVADO** |
+
+Na rodada 3, os 4 pareceres e os 4 checklists a)–o) bateram com o gabarito, sem falso positivo.
 
 **CERT-001, rodada 1:** PENDENTE por falso positivo no item h). Na rodada 2, após a correção, saiu APROVADO (tela no início deste README).
 
@@ -140,26 +142,28 @@ Teste com os 4 certificados fictícios e gabarito, em 13/11/2026.
 
 | Métrica | Valor | Origem |
 |---|---|---|
-| Erros plantados detectados | 7 de 7 | Medido (teste com gabarito, 13/11/2026) |
-| Pareceres corretos | 4 de 4 (após 1 correção) | Medido (teste com gabarito, 13/11/2026) |
-| Tempo da IA | ~7 s por certificado (6,0 a 7,3 s medidos) | Medido (13/11/2026) |
+| Erros plantados detectados | 7 de 7 | Medido (teste com gabarito, 13 e 20/11/2026) |
+| Pareceres corretos | 4 de 4 (rodada 3, após 2 correções na instrução da IA) | Medido (teste com gabarito, 13 e 20/11/2026) |
+| Tempo da IA | ~7 s por certificado (6,0 a 7,3 s medidos) | Medido (13 a 20/11/2026) |
 | Conferência humana do parecer | ~1 min por certificado | Medido (13/11/2026) |
 | Análise manual de referência | ~60 min por certificado | **Estimativa de especialista** (não medido) |
 
-**O que a rodada 1 ensinou**
+**O que os testes ensinaram**
 
-- **Causa do falso positivo:** a instrução do item h) cobrava classe de exatidão também de instrumento digital. Foi corrigida para exigir faixa e resolução, com classe só para analógico. Depois da correção, o teste foi repetido e comparado com o gabarito.
+- **Falso positivo no item h) (rodada 1 do CERT-001 e 002):** a instrução do item h) cobrava classe de exatidão também de instrumento digital. Foi corrigida para exigir faixa e resolução, com classe só para analógico. Depois da correção, o teste foi repetido e comparado com o gabarito.
 - **Ajuste no dado de teste:** o CERT-002 imprimia U com 2 casas (0,03 em vez de 0,025). Corrigido para 3 casas.
 - **Ganho não previsto:** no CERT-003, a IA apontou sozinha a histerese de até 4 kPa e a falta da data de calibração do padrão.
+- **Falso positivo no item c) (rodada 2 do CERT-004):** a IA leu "identificação em cada página" como numeração de página, que é o item o), e contou a mesma falta duas vezes. A instrução foi corrigida: o item c) cobra o número do certificado em cada página e a indicação de fim; a numeração de página (x de y) é avaliada só no item o). Depois da correção, o teste foi repetido com os 4 certificados (rodada 3).
+- **Lição:** a instrução para a IA precisa ser tão específica quanto um procedimento técnico. Os dois falsos positivos vieram de termos ambíguos, e cada correção exigiu repetir o teste completo.
 
 ## Como foi construído com IA
 
-Construído em 1 dia com o Claude, sem escrever código à mão:
+Primeira versão construída em 1 dia com o Claude, sem escrever código à mão:
 
 1. **Critérios:** defini o checklist a)–o) e os limites de aceitação a partir da minha prática como signatário autorizado.
 2. **Dados de teste:** pedi ao Claude certificados fictícios com erros plantados e um gabarito, para medir os acertos de forma objetiva.
 3. **Ferramenta:** a página foi gerada pelo Claude e usa a IA dentro dela para ler o PDF; os cálculos ficam em código determinístico.
-4. **Teste e correção:** rodei os 4 certificados, comparei com o gabarito, encontrei um falso positivo, corrigi a instrução da IA e repeti o teste.
+4. **Teste e correção:** rodei os 4 certificados, comparei com o gabarito, encontrei dois falsos positivos (itens h) e c)), corrigi a instrução da IA a cada vez e repeti o teste.
 5. **Organização:** Projeto no Claude com instruções, arquivos de teste e diário de bordo, para qualquer nova conversa continuar do mesmo ponto.
 
 ## Limitações
