@@ -143,7 +143,7 @@ Na rodada 3, os 4 pareceres e os 4 checklists a)–o) bateram com o gabarito, se
 | Métrica | Valor | Origem |
 |---|---|---|
 | Erros plantados detectados | 7 de 7 | Medido (teste com gabarito, 13 e 20/11/2026) |
-| Pareceres corretos | 4 de 4 (rodada 3, após 2 correções na instrução da IA) | Medido (teste com gabarito, 13 e 20/11/2026) |
+| Pareceres corretos | 4 de 4 (após a correção do item h); na rodada 3, também os 4 checklists iguais ao gabarito, após a correção do item c) | Medido (teste com gabarito, 13 e 20/11/2026) |
 | Tempo da IA | ~7 s por certificado (6,0 a 7,3 s medidos) | Medido (13 a 20/11/2026) |
 | Conferência humana do parecer | ~1 min por certificado | Medido (13/11/2026) |
 | Análise manual de referência | ~60 min por certificado | **Estimativa de especialista** (não medido) |
